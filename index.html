@@ -11,6 +11,7 @@
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 -->  
   <link href="css/bootstrap.min.css" rel="stylesheet">
+
   <script src="js/jquery-1.12.0.min.js"></script>
   <script src="js/bootstrap.min.js"></script>
 
@@ -23,6 +24,8 @@
 
     var 
       API_URL = 'api.php?', // API
+      
+      // timers and times:
       modal_timer = 0,      // modal dialog timer
       MODAL_TIMEOUT = 3000,
       MODAL_TIMEOUT_ERR = 25000,
@@ -31,9 +34,26 @@
       ALERT_TIMEOUT = 15000,
       TIMEOUT_SHORT = 100,
       TIMEOUT_MEDIUM = 250,
+      
+      // texts:
+      DEVICE_TYPE_TEXT = 'Device type',
+      SERIAL_NUM_TEXT = 'Serial number',
+      OK_TEXT = 'OK',
+      INVALID_TEXT = 'Invalid',
+      INFO_TEXT = 'Info',
+      ERROR_TEXT = 'Error',
+      SUCCESS_TEXT = 'Success',
+      WARNING_TEXT = 'Warning',
+      CONFIRM_TEXT = 'Confirm',
       WAIT_A_MOMENT_TEXT = 'Wait a moment ...',
+      WRITE_DATA_TEXT = 'Write data into device. It will take a few seconds!',
       NO_ANSWER_TEXT = 'No answer!',
+      WRITE_CONFIRM_TEXT = 'Save new data into device.<br>'+
+        'Device is going to the reboot!<br><br>Are you sure?',
       DEVICE_READY_TEXT = 'Device is ready to use',
+      BTN_CANCEL = 'Cancel',
+      BTN_PROGRESS = 'Process',
+      
       isTest = 1;           // test - console log output      
   
     $(document).ready(function() {
@@ -67,21 +87,21 @@
       var d='',c='',e='',g='';
       switch(h) {
         case 's': 
-          d='Success:';c='alert-success';
+          d=SUCCESS_TEXT+':';c='alert-success';
           e='glyphicon glyphicon-ok-sign'; 
           break;
         case 'w': 
-          d='Warning:';c='alert-warning'; 
+          d=WARNING_TEXT+':';c='alert-warning'; 
           e='glyphicon glyphicon-warning-sign';
           break;
         case 'e': 
-          d='Error:';c='alert-danger';
+          d=ERROR_TEXT+':';c='alert-danger';
           t = t.split('{').join('').split('}').join('').split('"').join('');
           e='glyphicon glyphicon-exclamation-sign';
           break;
         case 'i': 
         default : 
-          d='Info:';c='alert-info';
+          d=INFO_TEXT+':';c='alert-info';
           e='glyphicon glyphicon-info-sign';
       }
       
@@ -104,7 +124,7 @@
       var
         e='glyphicon glyphicon-info-sign',
         g='<span class="'+e+'" aria-hidden="true"></span> ';
-      openModal(g+'Info',WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT);
+      openModal(g+INFO_TEXT,WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT);
     }
     function openModalE(e) {
       var 
@@ -114,7 +134,7 @@
       myConsoleLog('modalError: '+t);   
       if (e.indexOf(':"OK"')>0) return;
       myAlertShow('e',t);
-      openModal(g+'Error',t,MODAL_TIMEOUT_ERR);
+      openModal(g+ERROR_TEXT,t,MODAL_TIMEOUT_ERR);
     }
     function openModal(h,t,w) {
       closeModal();
@@ -158,8 +178,8 @@
         }
         try { 
           var r = JSON.parse(result);
-          $("#devident").html('Device type: '+(r['TYPE'] || '')+
-                              ' Serial number: '+(r['SN'] || ''));
+          $("#devident").html(DEVICE_TYPE_TEXT+': '+(r['TYPE'] || '')+
+                              ' '+SERIAL_NUM_TEXT+': '+(r['SN'] || ''));
         } catch(Exception) {}
         myAlertShow('i',DEVICE_READY_TEXT);
       })
@@ -179,19 +199,19 @@
         param={};
 
       if (ip == '' || !testIP(ip)) {
-        atext+='<br>'+'Invalid IP';
+        atext+='<br>'+INVALID_TEXT+' IP';
         $("#ip").focus();
       }
       if (mask == '' || !testIP(mask)) {
-        atext+='<br>'+'Invalid mask'; 
+        atext+='<br>'+INVALID_TEXT+' mask'; 
         $("#mask").focus();
       }
       if (gw != '' && !testIP(gw)) {
-        atext+='<br>'+'Invalid gateway';
+        atext+='<br>'+INVALID_TEXT+' gateway';
         $("#gateway").focus();
       }
       if (dns != '' && !testIP(dns)) {
-        atext+='<br>'+'Invalid DNS';
+        atext+='<br>'+INVALID_TEXT+' DNS';
         $("#ipdns").focus();
       }
       if (atext!='') {
@@ -209,12 +229,12 @@
         param.gateway=gw;  
         param.dns=dns;  
 
-        myAlertShow('w','Write data into device. It will take a few seconds!');
-        openModal('Info',WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT_ERR);
+        myAlertShow('w',WRITE_DATA_TEXT);
+        openModal(INFO_TEXT,WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT_ERR);
 
         $.get(API_URL, param, function(result) {
           myConsoleLog('submitNetSettings: ' + result);
-          if ((c=result.indexOf("status")) > 0) { 
+        if (((c=result.indexOf("status")) > 0) && (result.indexOf('"status":"OK"') < 0)) { 
             err = result.substr(c);
             setTimeout(function() {openModalE(err)},TIMEOUT_MEDIUM);          
             return;
@@ -222,7 +242,7 @@
 
           closeModal();
 
-          myAlertShow('s','OK');
+          myAlertShow('s',OK_TEXT);
         })
         .fail(function() {
           myAlertShow('e',NO_ANSWER_TEXT);
@@ -230,8 +250,7 @@
     	  });
       };
         
-      confirm('Confirm','Save new data into device.<br>'+
-        'Device is going to the reboot!<br><br>Are you sure?','Cancel','Process',cb);          
+      confirm(CONFIRM_TEXT,WRITE_CONFIRM_TEXT,BTN_CANCEL,BTN_PROGRESS,cb);          
     }
 
     function readNetSettings() {
@@ -281,8 +300,7 @@
         param={};
         
       if (ip_target == '' || !testIP(ip_target)) {
-        myAlertShow('e',"Invalid IP address");
-        //alert("Invalid IP: " + ip_target);
+        myAlertShow('e',INVALID_TEXT+" IP address");
         $("#iptarget").focus();
         return;
       } else {
@@ -301,18 +319,18 @@
       param.imp=imp;  
       param.rxgain=rxgain;  
       param.txgain=txgain;  
-      myAlertShow('w','Write data into device. It will take a few seconds!');
-      openModal('Info',WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT_WAIT);
+      myAlertShow('w',WRITE_DATA_TEXT);
+      openModal(INFO_TEXT,WAIT_A_MOMENT_TEXT,MODAL_TIMEOUT_WAIT);
 
       $.get(API_URL, param, function(result) {
         myConsoleLog('submitConfiguration: ' + result);
-        if ((c=result.indexOf("status")) > 0) { 
+        if (((c=result.indexOf("status")) > 0) && (result.indexOf('"status":"OK"') < 0)) { 
           err = result.substr(c);
           setTimeout(function() {openModalE(err)},TIMEOUT_MEDIUM);
           return;
         }
 
-        myAlertShow('s','OK');
+        myAlertShow('s',OK_TEXT);
       })
       .fail(function() {
         myAlertShow('e',NO_ANSWER_TEXT);
@@ -674,7 +692,7 @@
 </div>
 
 <footer class="container">
-  <p>Inoteska webmanager v1.0 (c)2016</p>
+  <p>Webmanager v1.0 (c)2016 Inoteska</p>
 </footer>
 
 
